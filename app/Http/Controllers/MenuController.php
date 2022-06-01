@@ -95,24 +95,30 @@ class MenuController extends BaseController
      */
 
     public function getMenuItems() {
-        $allMenuItems = MenuItem::all()/* ->toArray() */;
-        $responsemenuItems = [];
-        /* $minId = $allMenuItems->min('parent_id');
-        $maxId = $allMenuItems->max('parent_id'); */
-
+        $menuItems = MenuItem::all()->toArray();
         
-        foreach ($allMenuItems as $menuKey => $menuItem) {
-            $menuItem->children = [];
-            if ($menuItem->parent_id == NULL) {
-                array_push($responsemenuItems, $menuItem);
-            }
-            // else if ($menuItem->parent_id != NULL) {
-                $childrens = $allMenuItems->filter(function($item) use ($menuItem) { $item->id == $menuItem->parent_id; });
+        function loopThroughItems($items, $id = NULL, $link = 'parent_id') {
+            $filteredArray = array_filter($items, function ($item) use ($id, $link) {
+                    return $item[$link] == $id;
+                }
+            );
+
+            $mappedArray = array_map(function($item) use ($items) {
+                $allItems = [];
+                foreach ($item as $k => $i) {
+                    $allItems[$k] = $i;
+                }
+
+                $allItems['children'] = loopThroughItems($items, $item['id']);
                 
-                $menuItem->children = $childrens;
-            // }
+                return $allItems;
+            }, $filteredArray);
+
+            return $mappedArray;
         }
 
-        return $responsemenuItems;
+        $nestedData = loopThroughItems($menuItems);
+
+        return $nestedData;
     }
 }
